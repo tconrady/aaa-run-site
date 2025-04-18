@@ -1,6 +1,6 @@
 // src/pages/SynthesizerPage.jsx
 import React from 'react';
-import AaaSynthesizer from '../components/AaaSynthesizer';
+import AaaSynthesizer from '../components/EnhancedSynthesizer';
 import './SynthesizerPage.css';
 
 function SynthesizerPage() {
