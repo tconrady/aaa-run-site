@@ -1,7 +1,6 @@
 // EnhancedAaaSynthesizer.jsx
 import { useState, useEffect, useRef } from 'react';
 import './Synthesizer.css';
-import './EnhancedSynthesizer.css';
 
 // Tooltip component for parameter explanations
 const ControlTooltip = ({ text }) => (
