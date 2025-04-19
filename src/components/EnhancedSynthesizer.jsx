@@ -854,348 +854,503 @@ const EnhancedAaaSynthesizer = () => {
   }, []);
 
   return (
-    <div className="synth-container modern">
-      <div className="synth-header">
-        <div className="synth-title">
-          <div className="icon-wave"></div>
-          <div>
-            <h2>Enhanced Synthesizer</h2>
-            <p>Create and shape sounds with this virtual synth</p>
-          </div>
+    <div className="synth-container modern full-width">
+      {!isInitialized ? (
+        <div className="init-screen">
+          <h2>Enhanced Synthesizer</h2>
+          <p>Create and shape sounds with this virtual synth</p>
+          <button 
+            onClick={initializeAudio}
+            className="init-button"
+          >
+            <span className="icon-music"></span>
+            Initialize Synthesizer
+          </button>
         </div>
-        
-        <div className="header-buttons">
-          {!isInitialized ? (
-            <button 
-              onClick={initializeAudio}
-              className="init-button"
-            >
-              <span className="icon-music"></span>
-              Initialize Synthesizer
-            </button>
-          ) : (
-            <>
-              <button 
-                onClick={stopAllSounds} 
-                className="panic-button"
-              >
-                <span className="icon-stop"></span>
-                Stop All Sounds
-              </button>
-              
-              <div className="control-pill octave-controls">
-                <span>Octave: {octaveShift}</span>
-                <div>
-                  <button 
-                    onClick={() => setOctaveShift(prev => Math.max(prev - 1, -2))}
-                    className="octave-button"
-                    disabled={octaveShift <= -2}
-                  >
-                    -
-                  </button>
-                  <button 
-                    onClick={() => setOctaveShift(prev => Math.min(prev + 1, 2))}
-                    className="octave-button"
-                    disabled={octaveShift >= 2}
-                  >
-                    +
-                  </button>
-                </div>
-                <span className="key-hint">(Z/X keys)</span>
-              </div>
-              
-              <button 
-                onClick={() => setShowHelp(!showHelp)}
-                className={`help-button ${showHelp ? 'active' : ''}`}
-              >
-                <span className="icon-help"></span>
-                {showHelp ? 'Hide Help' : 'Show Help'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {showHelp && (
-        <div className="help-panel">
-          <h3><span className="icon-music"></span> Synthesizer Basics</h3>
-          <p>This synthesizer creates sound using digital oscillators and audio processing:</p>
-          <ul>
-            <li><strong>Oscillator</strong>: Generates the basic sound waveform. Each waveform has a distinct character:
-              <ul>
-                <li><em>Sine</em> - Smooth and pure, good for bass or flute-like sounds</li>
-                <li><em>Square</em> - Bright and hollow, similar to woodwinds or retro game sounds</li>
-                <li><em>Triangle</em> - Softer than square but with some harmonics, good for leads</li>
-                <li><em>Sawtooth</em> - Rich and bright, excellent for strings and brass</li>
-              </ul>
-            </li>
-            <li><strong>ADSR Envelope</strong>: Controls how the sound evolves over time:
-              <ul>
-                <li><em>Attack</em>: Time to reach full volume when a key is pressed</li>
-                <li><em>Decay</em>: Time to fall to sustain level after initial attack</li>
-                <li><em>Sustain</em>: Volume level maintained while key is held</li>
-                <li><em>Release</em>: Time for sound to fade out after key is released</li>
-              </ul>
-            </li>
-            <li><strong>Filter</strong>: Shapes the tone by removing or emphasizing frequencies:
-              <ul>
-                <li><em>Lowpass</em>: Allows low frequencies through, cuts high frequencies</li>
-                <li><em>Highpass</em>: Allows high frequencies through, cuts low frequencies</li>
-                <li><em>Bandpass</em>: Only allows frequencies in a specific range</li>
-                <li><em>Notch</em>: Removes frequencies in a specific range</li>
-              </ul>
-            </li>
-            <li><strong>Effects</strong>: Add depth and character to the sound:
-              <ul>
-                <li><em>Reverb</em>: Creates a sense of space, like playing in a room or hall</li>
-                <li><em>Delay</em>: Creates echoes that repeat the sound</li>
-              </ul>
-            </li>
-            <li><strong>LFO</strong> (Low Frequency Oscillator): Creates movement by automatically modulating parameters over time</li>
-          </ul>
-          <p>Try different presets to hear how these elements work together, then tweak them to create your own sounds!</p>
-        </div>
-      )}
-      
-      {isInitialized && (
-        <div className="synth-interface">
-          <div className="primary-controls">
-            <div className="oscilloscope-container">
-              <h3><span className="icon-waveform"></span> Oscilloscope</h3>
-              <canvas ref={canvasRef} className="oscilloscope"></canvas>
-            </div>
-            
-            <div className="keyboard-section">
-              <div className="keyboard-label">Virtual Keyboard</div>
-              <div className="key-row">
-                {Object.entries(keyToNote).map(([key, note]) => {
-                  const isBlackKey = note.includes('#');
-                  return (
-                    <div 
-                      key={key}
-                      className={`key ${isBlackKey ? 'black-key' : 'white-key'} ${activeNotes.includes(key) ? 'active' : ''}`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        playNote(key);
-                      }}
-                      onMouseUp={() => stopNote(key)}
-                      onMouseLeave={() => activeNotes.includes(key) && stopNote(key)}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        playNote(key);
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        stopNote(key);
-                      }}
-                    >
-                      <div className="key-content">
-                        <span className="note-name">{note}</span>
-                        <span className="key-label">{key.toUpperCase()}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="keyboard-instruction">
-                White keys: A S D F G H J K L | Black keys: W E T Y U O
-              </p>
-            </div>
-
-            <div className="preset-section">
-              <h3><span className="icon-music"></span> Sound Presets</h3>
-              <div className="preset-buttons">
-                {Object.keys(SYNTH_PRESETS).map(presetName => (
-                  <button
-                    key={presetName}
-                    onClick={() => applyPreset(presetName)}
-                    className={`preset-button ${selectedPreset === presetName ? 'active' : ''}`}
-                  >
-                    {presetName}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="secondary-controls">
-            <div className="tabs">
-              <button
-                className={`tab-button ${activeTab === 'main' ? 'active' : ''}`}
-                onClick={() => setActiveTab('main')}
-              >
-                Main
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'filter' ? 'active' : ''}`}
-                onClick={() => setActiveTab('filter')}
-              >
-                Filter
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'effects' ? 'active' : ''}`}
-                onClick={() => setActiveTab('effects')}
-              >
-                Effects
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'lfo' ? 'active' : ''}`}
-                onClick={() => setActiveTab('lfo')}
-              >
-                LFO
-              </button>
-            </div>
-            
-            {activeTab === 'main' && (
-              <div className="tab-content">
-                <div className="control-section collapsible">
-                  <div className="section-header" onClick={() => setControlsVisible(prev => ({...prev, oscillator: !prev.oscillator}))}>
-                    <h3><span className="icon-wave"></span> Oscillator</h3>
-                    <span className={`toggle-icon ${controlsVisible.oscillator ? 'open' : 'closed'}`}>▼</span>
+      ) : (
+        <>
+          <div className="synth-layout">
+            <div className="synth-top-panel">
+              <div className="top-controls">
+                <div className="synth-header">
+                  <div className="synth-title">
+                    <div className="icon-wave"></div>
+                    <h2>Enhanced Synthesizer</h2>
                   </div>
                   
-                  {controlsVisible.oscillator && (
-                    <div className="control-panel">
-                      <div className="control-group">
-                        <label>
-                          Waveform
-                          <ControlTooltip text="The basic shape of the sound wave. Sine is smooth, square is buzzy, triangle is balanced, sawtooth is bright." />
-                        </label>
-                        <select 
-                          className="modern-select"
-                          value={waveform} 
-                          onChange={(e) => setWaveform(e.target.value)}
+                  <div className="header-controls">
+                    <button 
+                      onClick={stopAllSounds} 
+                      className="panic-button"
+                    >
+                      <span className="icon-stop"></span>
+                      Stop Sounds
+                    </button>
+                    
+                    <div className="control-pill octave-controls">
+                      <span>Octave: {octaveShift}</span>
+                      <div>
+                        <button 
+                          onClick={() => setOctaveShift(prev => Math.max(prev - 1, -2))}
+                          className="octave-button"
+                          disabled={octaveShift <= -2}
                         >
-                          <option value="sine">Sine</option>
-                          <option value="square">Square</option>
-                          <option value="triangle">Triangle</option>
-                          <option value="sawtooth">Sawtooth</option>
-                        </select>
-                        <div className="waveform-visualization">
-                          <div className={`waveform-display ${waveform}`}></div>
-                        </div>
+                          -
+                        </button>
+                        <button 
+                          onClick={() => setOctaveShift(prev => Math.min(prev + 1, 2))}
+                          className="octave-button"
+                          disabled={octaveShift >= 2}
+                        >
+                          +
+                        </button>
                       </div>
-                      
-                      <div className="control-group">
-                        <label>
-                          Volume: {Math.round(volume * 100)}%
-                          <ControlTooltip text="Overall loudness of the synthesizer" />
-                        </label>
-                        <div className="slider-container">
-                          <span className="icon-volume"></span>
-                          <input 
-                            type="range" 
-                            className="modern-slider"
-                            min="0" 
-                            max="1" 
-                            step="0.01" 
-                            value={volume} 
-                            onChange={(e) => setVolume(parseFloat(e.target.value))}
-                          />
-                          <div className="slider-value">{Math.round(volume * 100)}</div>
-                        </div>
-                      </div>
+                      <span className="key-hint">(Z/X)</span>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setShowHelp(!showHelp)}
+                      className={`help-button ${showHelp ? 'active' : ''}`}
+                    >
+                      <span className="icon-help"></span>
+                      {showHelp ? 'Hide Help' : 'Help'}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="preset-row">
+                  <div className="preset-label">
+                    <span className="icon-music"></span>
+                    <span>Sound Presets:</span>
+                  </div>
+                  <div className="preset-buttons">
+                    {Object.keys(SYNTH_PRESETS).map(presetName => (
+                      <button
+                        key={presetName}
+                        onClick={() => applyPreset(presetName)}
+                        className={`preset-button ${selectedPreset === presetName ? 'active' : ''}`}
+                      >
+                        {presetName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="controls-and-visual-panel">
+                <div className="visualizer-panel">
+                  <div className="oscilloscope-container">
+                    <h3><span className="icon-waveform"></span> Oscilloscope</h3>
+                    <canvas ref={canvasRef} className="oscilloscope"></canvas>
+                  </div>
+                  
+                  {showHelp && (
+                    <div className="mini-help">
+                      <p>Press keys to play notes. Use Z/X to change octave.</p>
+                      <p>White keys: A S D F G H J K L | Black keys: W E T Y U O</p>
                     </div>
                   )}
                 </div>
                 
-                <div className="control-section collapsible">
-                  <div className="section-header" onClick={() => setControlsVisible(prev => ({...prev, envelope: !prev.envelope}))}>
-                    <h3><span className="icon-sliders"></span> Envelope (ADSR)</h3>
-                    <span className={`toggle-icon ${controlsVisible.envelope ? 'open' : 'closed'}`}>▼</span>
+                <div className="controls-panel">
+                  <div className="tabs">
+                    <button
+                      className={`tab-button ${activeTab === 'main' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('main')}
+                    >
+                      Main
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 'filter' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('filter')}
+                    >
+                      Filter
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 'effects' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('effects')}
+                    >
+                      Effects
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 'lfo' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('lfo')}
+                    >
+                      LFO
+                    </button>
                   </div>
                   
-                  {controlsVisible.envelope && (
-                    <>
-                      <div className="adsr-visualization">
-                        <div className="adsr-phase adsr-attack" style={{width: `${attackTime * 100}px`}}></div>
-                        <div className="adsr-phase adsr-decay" style={{left: `${attackTime * 100}px`, width: `${decayTime * 100}px`}}></div>
-                        <div className="adsr-phase adsr-sustain" style={{left: `${(attackTime + decayTime) * 100}px`, height: `${sustainLevel * 100}%`}}></div>
-                        <div className="adsr-phase adsr-release" style={{left: `${(attackTime + decayTime + 0.5) * 100}px`, width: `${releaseTime * 50}px`}}></div>
-                        <div className="adsr-curve"></div>
+                  <div className="tab-content">
+                    {activeTab === 'main' && (
+                      <div className="panels-row">
+                        <div className="control-mini-panel">
+                          <h4>Oscillator</h4>
+                          <div className="control-group">
+                            <label>Waveform</label>
+                            <select 
+                              className="modern-select"
+                              value={waveform} 
+                              onChange={(e) => setWaveform(e.target.value)}
+                            >
+                              <option value="sine">Sine</option>
+                              <option value="square">Square</option>
+                              <option value="triangle">Triangle</option>
+                              <option value="sawtooth">Sawtooth</option>
+                            </select>
+                          </div>
+                          
+                          <div className="control-group">
+                            <label>Volume: {Math.round(volume * 100)}%</label>
+                            <div className="slider-container">
+                              <input 
+                                type="range" 
+                                className="modern-slider"
+                                min="0" 
+                                max="1" 
+                                step="0.01" 
+                                value={volume} 
+                                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="waveform-mini">
+                            <div className={`waveform-display ${waveform}`}></div>
+                          </div>
+                        </div>
+                        
+                        <div className="control-mini-panel">
+                          <h4>ADSR Envelope</h4>
+                          <div className="adsr-mini-viz">
+                            <div className="adsr-curve"></div>
+                          </div>
+                          <div className="control-grid">
+                            <div className="control-group">
+                              <label>Attack: {attackTime.toFixed(2)}s</label>
+                              <input 
+                                type="range" 
+                                className="modern-slider attack-slider"
+                                min="0.01" 
+                                max="1" 
+                                step="0.01" 
+                                value={attackTime} 
+                                onChange={(e) => setAttackTime(parseFloat(e.target.value))}
+                              />
+                            </div>
+                            
+                            <div className="control-group">
+                              <label>Decay: {decayTime.toFixed(2)}s</label>
+                              <input 
+                                type="range" 
+                                className="modern-slider decay-slider"
+                                min="0.01" 
+                                max="1" 
+                                step="0.01" 
+                                value={decayTime} 
+                                onChange={(e) => setDecayTime(parseFloat(e.target.value))}
+                              />
+                            </div>
+                            
+                            <div className="control-group">
+                              <label>Sustain: {Math.round(sustainLevel * 100)}%</label>
+                              <input 
+                                type="range" 
+                                className="modern-slider sustain-slider"
+                                min="0" 
+                                max="1" 
+                                step="0.01" 
+                                value={sustainLevel} 
+                                onChange={(e) => setSustainLevel(parseFloat(e.target.value))}
+                              />
+                            </div>
+                            
+                            <div className="control-group">
+                              <label>Release: {releaseTime.toFixed(2)}s</label>
+                              <input 
+                                type="range" 
+                                className="modern-slider release-slider"
+                                min="0.01" 
+                                max="2" 
+                                step="0.01" 
+                                value={releaseTime} 
+                                onChange={(e) => setReleaseTime(parseFloat(e.target.value))}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="control-panel">
+                    )}
+                    
+                    {activeTab === 'filter' && (
+                      <div className="control-panel horizontal">
                         <div className="control-group">
-                          <label>
-                            Attack: {attackTime.toFixed(2)}s
-                            <ControlTooltip text="Time it takes for the sound to reach full volume when a key is pressed. Shorter times create percussive sounds, longer times create soft fade-ins." />
-                          </label>
+                          <label>Filter Type</label>
+                          <select 
+                            className="modern-select"
+                            value={filterType} 
+                            onChange={(e) => setFilterType(e.target.value)}
+                          >
+                            <option value="lowpass">Low Pass</option>
+                            <option value="highpass">High Pass</option>
+                            <option value="bandpass">Band Pass</option>
+                            <option value="notch">Notch</option>
+                          </select>
+                        </div>
+                        
+                        <div className="control-group">
+                          <label>Cutoff: {filterCutoff.toFixed(0)} Hz</label>
                           <div className="slider-container">
                             <input 
                               type="range" 
-                              className="modern-slider attack-slider"
-                              min="0.01" 
-                              max="1" 
-                              step="0.01" 
-                              value={attackTime} 
-                              onChange={(e) => setAttackTime(parseFloat(e.target.value))}
+                              className="modern-slider"
+                              min="20" 
+                              max="20000" 
+                              step="1" 
+                              value={filterCutoff} 
+                              onChange={(e) => setFilterCutoff(parseFloat(e.target.value))}
                             />
-                            <div className="slider-value">{attackTime.toFixed(2)}s</div>
                           </div>
                         </div>
                         
                         <div className="control-group">
-                          <label>
-                            Decay: {decayTime.toFixed(2)}s
-                            <ControlTooltip text="Time it takes for the sound to fall from peak volume to sustain level after the initial attack." />
-                          </label>
+                          <label>Resonance: {filterResonance.toFixed(1)}</label>
                           <div className="slider-container">
                             <input 
                               type="range" 
-                              className="modern-slider decay-slider"
-                              min="0.01" 
-                              max="1" 
-                              step="0.01" 
-                              value={decayTime} 
-                              onChange={(e) => setDecayTime(parseFloat(e.target.value))}
+                              className="modern-slider"
+                              min="0.1" 
+                              max="20" 
+                              step="0.1" 
+                              value={filterResonance} 
+                              onChange={(e) => setFilterResonance(parseFloat(e.target.value))}
                             />
-                            <div className="slider-value">{decayTime.toFixed(2)}s</div>
                           </div>
                         </div>
-                        
+                      </div>
+                    )}
+                    
+                    {activeTab === 'effects' && (
+                      <div className="control-panel horizontal">
                         <div className="control-group">
-                          <label>
-                            Sustain: {Math.round(sustainLevel * 100)}%
-                            <ControlTooltip text="Volume level maintained while a key is held down after attack and decay phases." />
-                          </label>
+                          <label>Reverb: {Math.round(reverbAmount * 100)}%</label>
                           <div className="slider-container">
                             <input 
                               type="range" 
-                              className="modern-slider sustain-slider"
+                              className="modern-slider"
                               min="0" 
-                              max="1" 
+                              max="0.9" 
                               step="0.01" 
-                              value={sustainLevel} 
-                              onChange={(e) => setSustainLevel(parseFloat(e.target.value))}
+                              value={reverbAmount} 
+                              onChange={(e) => setReverbAmount(parseFloat(e.target.value))}
                             />
-                            <div className="slider-value">{Math.round(sustainLevel * 100)}%</div>
                           </div>
                         </div>
                         
                         <div className="control-group">
-                          <label>
-                            Release: {releaseTime.toFixed(2)}s
-                            <ControlTooltip text="Time it takes for the sound to fade out after a key is released. Longer times create smoother fade-outs." />
-                          </label>
+                          <label>Delay Time: {delayTime.toFixed(2)}s</label>
                           <div className="slider-container">
                             <input 
                               type="range" 
-                              className="modern-slider release-slider"
-                              min="0.01" 
-                              max="2" 
+                              className="modern-slider"
+                              min="0.05" 
+                              max="1" 
                               step="0.01" 
-                              value={releaseTime} 
-                              onChange={(e) => setReleaseTime(parseFloat(e.target.value))}
+                              value={delayTime} 
+                              onChange={(e) => setDelayTime(parseFloat(e.target.value))}
                             />
-                            <div className="slider-value">{releaseTime.toFixed(2)}s</div>
+                          </div>
+                        </div>
+                        
+                        <div className="control-group">
+                          <label>Delay Feedback: {Math.round(delayFeedback * 100)}%</label>
+                          <div className="slider-container">
+                            <input 
+                              type="range" 
+                              className="modern-slider"
+                              min="0" 
+                              max="0.9" 
+                              step="0.01" 
+                              value={delayFeedback} 
+                              onChange={(e) => setDelayFeedback(parseFloat(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="control-group">
+                          <label>Delay Mix: {Math.round(delayMix * 100)}%</label>
+                          <div className="slider-container">
+                            <input 
+                              type="range" 
+                              className="modern-slider"
+                              min="0" 
+                              max="0.9" 
+                              step="0.01" 
+                              value={delayMix} 
+                              onChange={(e) => setDelayMix(parseFloat(e.target.value))}
+                            />
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
+                    )}
+                    
+                    {activeTab === 'lfo' && (
+                      <div className="control-panel horizontal">
+                        <div className="control-group">
+                          <label className="checkbox-label">
+                            <input 
+                              type="checkbox" 
+                              checked={lfoEnabled} 
+                              onChange={(e) => setLfoEnabled(e.target.checked)}
+                            />
+                            Enable LFO
+                          </label>
+                        </div>
+                        
+                        <div className="control-group">
+                          <label>LFO Rate: {lfoRate.toFixed(1)} Hz</label>
+                          <div className="slider-container">
+                            <input 
+                              type="range" 
+                              className="modern-slider"
+                              min="0.1" 
+                              max="20" 
+                              step="0.1" 
+                              value={lfoRate} 
+                              onChange={(e) => setLfoRate(parseFloat(e.target.value))}
+                              disabled={!lfoEnabled}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="control-group">
+                          <label>LFO Depth: {lfoDepth.toFixed(0)}</label>
+                          <div className="slider-container">
+                            <input 
+                              type="range" 
+                              className="modern-slider"
+                              min="1" 
+                              max="100" 
+                              step="1" 
+                              value={lfoDepth} 
+                              onChange={(e) => setLfoDepth(parseFloat(e.target.value))}
+                              disabled={!lfoEnabled}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="control-group">
+                          <label>LFO Target</label>
+                          <select 
+                            className="modern-select"
+                            value={lfoTarget} 
+                            onChange={(e) => setLfoTarget(e.target.value)}
+                            disabled={!lfoEnabled}
+                          >
+                            <option value="filter">Filter Cutoff</option>
+                            <option value="pitch">Pitch</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
+            
+            <div className="synth-bottom-panel">
+              <div className="keyboard-container">
+                <div className="key-row">
+                  {Object.entries(keyToNote).map(([key, note]) => {
+                    const isBlackKey = note.includes('#');
+                    return (
+                      <div 
+                        key={key}
+                        className={`key ${isBlackKey ? 'black-key' : 'white-key'} ${activeNotes.includes(key) ? 'active' : ''}`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          playNote(key);
+                        }}
+                        onMouseUp={() => stopNote(key)}
+                        onMouseLeave={() => activeNotes.includes(key) && stopNote(key)}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          playNote(key);
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          stopNote(key);
+                        }}
+                      >
+                        <div className="key-content">
+                          <span className="note-name">{note}</span>
+                          <span className="key-label">{key.toUpperCase()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {showHelp && (
+            <div className="help-panel">
+              <button className="close-help" onClick={() => setShowHelp(false)}>×</button>
+              <h3><span className="icon-music"></span> Synthesizer Basics</h3>
+              <div className="help-content">
+                <div className="help-section">
+                  <h4>Oscillator</h4>
+                  <p>Generates the basic sound waveform:</p>
+                  <ul>
+                    <li><em>Sine</em> - Smooth and pure, good for bass or flute-like sounds</li>
+                    <li><em>Square</em> - Bright and hollow, similar to woodwinds or retro game sounds</li>
+                    <li><em>Triangle</em> - Softer than square but with some harmonics, good for leads</li>
+                    <li><em>Sawtooth</em> - Rich and bright, excellent for strings and brass</li>
+                  </ul>
+                </div>
+                
+                <div className="help-section">
+                  <h4>ADSR Envelope</h4>
+                  <p>Controls how the sound evolves over time:</p>
+                  <ul>
+                    <li><em>Attack</em>: Time to reach full volume when a key is pressed</li>
+                    <li><em>Decay</em>: Time to fall to sustain level after initial attack</li>
+                    <li><em>Sustain</em>: Volume level maintained while key is held</li>
+                    <li><em>Release</em>: Time for sound to fade out after key is released</li>
+                  </ul>
+                </div>
+                
+                <div className="help-section">
+                  <h4>Filter</h4>
+                  <p>Shapes the tone by removing or emphasizing frequencies:</p>
+                  <ul>
+                    <li><em>Lowpass</em>: Allows low frequencies through, cuts high frequencies</li>
+                    <li><em>Highpass</em>: Allows high frequencies through, cuts low frequencies</li>
+                    <li><em>Bandpass</em>: Only allows frequencies in a specific range</li>
+                    <li><em>Notch</em>: Removes frequencies in a specific range</li>
+                  </ul>
+                </div>
+                
+                <div className="help-section">
+                  <h4>Effects</h4>
+                  <p>Add depth and character to the sound:</p>
+                  <ul>
+                    <li><em>Reverb</em>: Creates a sense of space, like playing in a room or hall</li>
+                    <li><em>Delay</em>: Creates echoes that repeat the sound</li>
+                  </ul>
+                </div>
+                
+                <div className="help-section">
+                  <h4>LFO</h4>
+                  <p>(Low Frequency Oscillator): Creates movement by automatically modulating parameters over time</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
             
             {activeTab === 'filter' && (
               <div className="tab-content">
@@ -1408,23 +1563,20 @@ const EnhancedAaaSynthesizer = () => {
                         LFO Target
                         <ControlTooltip text="Parameter that the LFO will modulate. 'Filter Cutoff' creates wah-like effects, 'Pitch' creates vibrato." />
                       </label>
-                      <select 
-                        className="modern-select"
-                        value={lfoTarget} 
-                        onChange={(e) => setLfoTarget(e.target.value)}
-                        disabled={!lfoEnabled}
-                      >
-                        <option value="filter">Filter Cutoff</option>
-                        <option value="pitch">Pitch</option>
-                      </select>
+                                              <select 
+                          className="modern-select"
+                          value={lfoTarget} 
+                          onChange={(e) => setLfoTarget(e.target.value)}
+                          disabled={!lfoEnabled}
+                        >
+                          <option value="filter">Filter Cutoff</option>
+                          <option value="pitch">Pitch</option>
+                        </select>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
       
       {showHelp && (
         <div className="help-panel">
@@ -1867,8 +2019,6 @@ const EnhancedAaaSynthesizer = () => {
           </div>
         </>
       )}
-    </div>
-  );
 };
 
 export default EnhancedAaaSynthesizer;
